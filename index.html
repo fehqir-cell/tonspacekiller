@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TON Space Killer</title>
+    <!-- Global Error Catcher for Debugging -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const errorMsg = "CRITICAL JS ERROR:\n" + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col;
+            alert(errorMsg);
+            console.error(errorMsg);
+            return false;
+        };
+    </script>
+    <!-- Cyberpunk font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- TON Connect SDK UI -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="cyber-theme">
+    <!-- CRT Overlay & Scanlines for Cyberpunk Vibe -->
+    <div class="crt-overlay"></div>
+    <div class="scanlines"></div>
+
+    <!-- Floating Dev Mock Panel (For Browser Testing Only) -->
+    <div id="dev-mock-panel" class="dev-panel collapsed">
+        <div class="dev-panel-header" onclick="toggleDevPanel()">
+            <span>⚙️ DEV MOCK CONTROL PANEL</span>
+            <span id="dev-toggle-icon">▲</span>
+        </div>
+        <div class="dev-panel-body">
+            <p class="dev-note">This panel simulates Telegram WebApp features in a normal browser.</p>
+            <div class="dev-field">
+                <label>Mock Username:</label>
+                <input type="text" id="mock-username" value="cyber_pilot_42" onchange="updateMockUser()">
+            </div>
+            <div class="dev-field">
+                <label>Mock First Name:</label>
+                <input type="text" id="mock-firstname" value="Neo" onchange="updateMockUser()">
+            </div>
+            <div class="dev-field">
+                <label>Theme Preset:</label>
+                <select id="mock-theme" onchange="changeMockTheme()">
+                    <option value="cyber-magenta">Cyber Magenta (Dark)</option>
+                    <option value="cyber-amber">Cyber Amber (Retro)</option>
+                    <option value="cyber-mint">Cyber Mint (Matrix)</option>
+                    <option value="telegram-native">Telegram Native Theme</option>
+                </select>
+            </div>
+            <div class="dev-field buttons">
+                <button class="dev-btn" onclick="addMockCrystals(500)">+500 🔮</button>
+                <button class="dev-btn" onclick="addMockGram(100)">+100 💎</button>
+                <button class="dev-btn" onclick="resetMockSave()">Reset Save</button>
+            </div>
+            <div id="dev-log" class="dev-log">System initialized...</div>
+        </div>
+    </div>
+
+    <!-- Main App Wrap -->
+    <div class="app-container">
+        
+        <!-- App Header (HUD) -->
+        <header class="app-header">
+            <div class="pilot-info">
+                <span class="glitch-text" data-text="PILOT">PILOT:</span>
+                <span id="pilot-name" class="neon-text-blue">@guest</span>
+            </div>
+            <div class="currencies-container" style="display: flex; gap: 8px;">
+                <div class="currency-hud">
+                    <div class="coin-icon">🔮</div>
+                    <span id="hud-crystals" class="neon-text-pink">0000</span>
+                </div>
+                <div class="currency-hud" style="border-color: rgba(0, 243, 255, 0.15)">
+                    <div class="coin-icon">💎</div>
+                    <span id="hud-gram" class="neon-text-blue">0000</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-content">
+            
+            <!-- GAME TAB -->
+            <section id="game-tab" class="tab-content active">
+                <div class="game-container">
+                    <!-- Game HUD Overlay -->
+                    <div id="game-hud" class="hidden">
+                        <div class="hud-top">
+                            <div class="hud-round">ROUND <span id="hud-round-val">1</span></div>
+                            <div class="hud-timer">
+                                <span class="hud-label">TIME</span>
+                                <span id="timer-val" class="neon-text-pink">01:00</span>
+                            </div>
+                        </div>
+                        <div class="hud-bottom">
+                            <!-- Shield Gauge -->
+                            <div class="hud-shield-container">
+                                <span class="shield-label">SHIELD</span>
+                                <div class="shield-bar-outer">
+                                    <div id="shield-bar-fill" class="shield-bar-fill"></div>
+                                </div>
+                            </div>
+                            <div class="hud-speed">
+                                <span class="speed-label">WARP SPEED</span>
+                                <span id="speed-val">1.0x</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas for HTML5 Game -->
+                    <canvas id="game-canvas"></canvas>
+
+                    <!-- Tap Zones (Overlay on Mobile for steer clicks) -->
+                    <div class="tap-zones">
+                        <div class="tap-zone left-zone" id="btn-left"></div>
+                        <div class="tap-zone right-zone" id="btn-right"></div>
+                    </div>
+
+                    <!-- Game Overlay Screens -->
+                    <div id="screen-start" class="game-overlay">
+                        <h1 class="logo-text">TON SPACE <span class="neon-text-magenta">KILLER</span></h1>
+                        <p class="tagline">COSMOS COLLECTOR V1.0</p>
+                        
+                        <div class="instructions-panel">
+                            <h3>MISSION OBJECTIVE</h3>
+                            <p>Collect energy crystals <span class="crystal-bullet">🔮</span> to power the grid. Avoid asteroid debris <span class="asteroid-bullet">☄️</span> which drains your shields.</p>
+                            <h3>CONTROLS</h3>
+                            <ul>
+                                <li><strong>Desktop</strong>: A / D or ← / → arrow keys</li>
+                                <li><strong>Mobile</strong>: Drag ship directly OR tap left/right halves of the screen</li>
+                            </ul>
+                        </div>
+
+                        <div class="high-score-box">
+                            RECORD DEPOT: <span id="high-score-val" class="neon-text-blue">0</span> CRYSTALS
+                        </div>
+
+                        <button id="start-round-btn" class="cyber-btn neon-magenta">LAUNCH MISSION</button>
+                    </div>
+
+                    <div id="screen-over" class="game-overlay hidden">
+                        <h2 class="glitch-text" data-text="MISSION OVER">MISSION OVER</h2>
+                        <p id="over-reason" class="neon-text-pink">SHIELD INTEGRITY COMPROMISED</p>
+
+                        <div class="stats-recap">
+                            <div class="recap-row">
+                                <span>Crystals Collected:</span>
+                                <span id="recap-crystals" class="neon-text-blue">0</span>
+                            </div>
+                            <div class="recap-row">
+                                <span>Round Reached:</span>
+                                <span id="recap-round">1</span>
+                            </div>
+                            <div class="recap-row highlight">
+                                <span>Credits Earned:</span>
+                                <span id="recap-credits" class="neon-text-pink">+0</span>
+                            </div>
+                            <div class="recap-row highlight-blue" style="border-top: 1px dashed rgba(0, 243, 255, 0.1); padding-top: 8px; margin-top: 4px;">
+                                <span style="color: var(--neon-blue);">GRAM Earned:</span>
+                                <span id="recap-gram" class="neon-text-blue">+0</span>
+                            </div>
+                        </div>
+
+                        <button id="restart-btn" class="cyber-btn neon-magenta">RE-ENTER ORBIT</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GARAGE (UPGRADES) TAB -->
+            <section id="garage-tab" class="tab-content">
+                <div class="menu-container">
+                    <h2 class="tab-title neon-text-magenta">HACKER GARAGE</h2>
+                    <p class="tab-subtitle">Hardware modifications for spaceship survival</p>
+
+                    <div class="upgrade-list">
+                        <!-- Shield Upgrade -->
+                        <div class="upgrade-card neon-card-green">
+                            <div class="upgrade-icon">🛡️</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Reinforced Deflectors</h3>
+                                <p class="upgrade-desc">Increases max shield capacity. Absorbs more collisions.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="shield-lvl">1</span>/5</span>
+                                    <div class="lvl-dots" id="shield-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-shield-btn" onclick="buyUpgrade('shield')">
+                                    <span class="btn-cost" id="shield-cost">100</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-shield-btn" onclick="buyUpgradeWithTON('shield')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-shield">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Magnet Upgrade -->
+                        <div class="upgrade-card neon-card-blue">
+                            <div class="upgrade-icon">🧲</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Quantum Attractor</h3>
+                                <p class="upgrade-desc">Pulls nearby energy crystals toward the spaceship.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="magnet-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="magnet-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-magnet-btn" onclick="buyUpgrade('magnet')">
+                                    <span class="btn-cost" id="magnet-cost">150</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-magnet-btn" onclick="buyUpgradeWithTON('magnet')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-magnet">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Engine Polish / Thruster Speed Control -->
+                        <div class="upgrade-card neon-card-pink">
+                            <div class="upgrade-icon">🚀</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Plasma Burners</h3>
+                                <p class="upgrade-desc">Enhances maneuverability speed and scores per crystal.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="engine-lvl">1</span>/5</span>
+                                    <div class="lvl-dots" id="engine-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-engine-btn" onclick="buyUpgrade('engine')">
+                                    <span class="btn-cost" id="engine-cost">200</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-engine-btn" onclick="buyUpgradeWithTON('engine')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-engine">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Repair Droids Upgrade -->
+                        <div class="upgrade-card neon-card-green" style="border-color: rgba(0, 255, 102, 0.15)">
+                            <div class="upgrade-icon">🔧</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Nano-Repair Droids</h3>
+                                <p class="upgrade-desc">Slowly repairs compromised shield deflectors during flight.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="repair-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="repair-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-repair-btn" onclick="buyUpgrade('repair')">
+                                    <span class="btn-cost" id="repair-cost">250</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-repair-btn" onclick="buyUpgradeWithTON('repair')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-repair">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Glitch Mining Upgrade -->
+                        <div class="upgrade-card neon-card-pink" style="border-color: rgba(245, 41, 166, 0.15)">
+                            <div class="upgrade-icon">👾</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Glitch Mining Protocol</h3>
+                                <p class="upgrade-desc">Unlocks chance to spawn rare unstable Glitch Crystals worth 30 credits.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="glitch-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="glitch-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-glitch-btn" onclick="buyUpgrade('glitch')">
+                                    <span class="btn-cost" id="glitch-cost">300</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-glitch-btn" onclick="buyUpgradeWithTON('glitch')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-glitch">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Overclock Core Upgrade -->
+                        <div class="upgrade-card neon-card-blue" style="border-color: rgba(0, 243, 255, 0.15)">
+                            <div class="upgrade-icon">⚡</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Overclock Core</h3>
+                                <p class="upgrade-desc">Overloads the reactor to spawn crystals faster each round.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="overclock-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="overclock-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-overclock-btn" onclick="buyUpgrade('overclock')">
+                                    <span class="btn-cost" id="overclock-cost">350</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-overclock-btn" onclick="buyUpgradeWithTON('overclock')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-overclock">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Shockwave Burst Upgrade -->
+                        <div class="upgrade-card neon-card-green" style="border-color: rgba(0, 255, 102, 0.15)">
+                            <div class="upgrade-icon">💥</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Shockwave Burst</h3>
+                                <p class="upgrade-desc">Periodically releases a pulse that destroys nearby asteroids.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="shockwave-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="shockwave-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-shockwave-btn" onclick="buyUpgrade('shockwave')">
+                                    <span class="btn-cost" id="shockwave-cost">400</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-shockwave-btn" onclick="buyUpgradeWithTON('shockwave')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-shockwave">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Targeting Matrix Upgrade -->
+                        <div class="upgrade-card neon-card-pink" style="border-color: rgba(255, 0, 127, 0.15)">
+                            <div class="upgrade-icon">🎯</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name">Targeting Matrix</h3>
+                                <p class="upgrade-desc">Locks a targeting ring on the nearest crystal to guide collection.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="targeting-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="targeting-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-targeting-btn" onclick="buyUpgrade('targeting')">
+                                    <span class="btn-cost" id="targeting-cost">450</span>
+                                    <span class="btn-currency">🔮</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-targeting-btn" onclick="buyUpgradeWithTON('targeting')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-targeting">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Premium Upgrade: Nano-Shield Capacitor -->
+                        <div class="upgrade-card neon-card-blue" style="border-color: var(--neon-blue); background: rgba(0, 243, 255, 0.05)">
+                            <div class="upgrade-icon">🛡️</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name" style="color: var(--neon-blue)">Nano-Shield Capacitor</h3>
+                                <p class="upgrade-desc">Auto-absorbs a fatal collision once per round and restores shields.</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="nanoshield-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="nanoshield-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-nanoshield-btn" onclick="buyUpgrade('nanoshield')">
+                                    <span class="btn-cost" id="nanoshield-cost">10</span>
+                                    <span class="btn-currency">💎</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-nanoshield-btn" onclick="buyUpgradeWithTON('nanoshield')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-nanoshield">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Premium Upgrade: Crystal Singularity -->
+                        <div class="upgrade-card neon-card-magenta" style="border-color: var(--neon-magenta); background: rgba(255, 0, 127, 0.05)">
+                            <div class="upgrade-icon">🌌</div>
+                            <div class="upgrade-info">
+                                <h3 class="upgrade-name" style="color: var(--neon-magenta)">Crystal Singularity</h3>
+                                <p class="upgrade-desc">Permanently amplifies all collected crystal yields (+20% per level).</p>
+                                <div class="upgrade-level-bar">
+                                    <span class="level-label">LVL <span id="singularity-lvl">0</span>/5</span>
+                                    <div class="lvl-dots" id="singularity-dots"></div>
+                                </div>
+                            </div>
+                            <div class="upgrade-btn-group" style="display: flex; gap: 6px; flex-direction: column;">
+                                <button class="upgrade-btn" id="buy-singularity-btn" onclick="buyUpgrade('singularity')">
+                                    <span class="btn-cost" id="singularity-cost">15</span>
+                                    <span class="btn-currency">💎</span>
+                                </button>
+                                <button class="upgrade-btn ton-pay-btn hidden" id="ton-buy-singularity-btn" onclick="buyUpgradeWithTON('singularity')" style="border-color: #0088cc; color: #0088cc; height: auto; padding: 4px; font-size: 0.6rem; min-width: 68px;">
+                                    <span class="ton-cost" id="ton-cost-singularity">0.01</span>
+                                    <span class="btn-currency" style="font-size: 0.5rem;">TON 💎</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- BALANCE (WALLET & CRYPTO) TAB -->
+            <section id="balance-tab" class="tab-content">
+                <div class="menu-container">
+                    <h2 class="tab-title neon-text-blue">DECENTRALIZED BALANCE</h2>
+                    <p class="tab-subtitle">Manage your connected wallets and crypto assets</p>
+
+                    <!-- TON Connect button container -->
+                    <div class="wallet-connect-container" style="display: flex; justify-content: center; margin-bottom: 20px; border-bottom: 1px dashed rgba(0, 243, 255, 0.1); padding-bottom: 15px;">
+                        <div id="ton-connect-btn"></div>
+                    </div>
+
+                    <!-- Defi Exchange Section -->
+                    <h2 class="tab-title neon-text-blue" style="margin-top: 25px; border-top: 1px solid rgba(0, 243, 255, 0.1); padding-top: 20px; font-size: 1.2rem;">DEFI EXCHANGE</h2>
+                    <p class="tab-subtitle">Swap resources on the decentralized market</p>
+                    <div class="upgrade-list" style="margin-top: 15px; grid-template-columns: 1fr; margin-bottom: 25px;">
+                        <div class="upgrade-card neon-card-blue" style="border-color: var(--neon-blue); background: rgba(0, 243, 255, 0.02)">
+                            <div class="upgrade-icon">💱</div>
+                            <div class="upgrade-info" style="flex-grow: 1;">
+                                <h3 class="upgrade-name" style="color: var(--neon-blue)">Liquidity Swap</h3>
+                                <p class="upgrade-desc">Trade collected energy crystals for premium GRAM tokens.<br>Rate: 10,000 🔮 ➔ 1.00 💎</p>
+                            </div>
+                            <button class="upgrade-btn" id="exchange-btn" onclick="swapCrystalsForGram()" style="width: auto; padding: 0 15px; font-size: 0.85rem; height: 40px; align-self: center;">
+                                SWAP 10k 🔮
+                            </button>
+                        </div>
+
+                        <!-- Exchange TON for GRAM (Only visible when wallet connected) -->
+                        <div class="upgrade-card neon-card-blue ton-exchange-card hidden" style="border-color: #0088cc; background: rgba(0, 136, 204, 0.02)">
+                            <div class="upgrade-icon">💎</div>
+                            <div class="upgrade-info" style="flex-grow: 1;">
+                                <h3 class="upgrade-name" style="color: #0088cc">Buy GRAM with TON</h3>
+                                <p class="upgrade-desc">Purchase premium GRAM tokens directly with TON cryptocurrency.<br>Price: 0.05 TON ➔ 5.00 GRAM</p>
+                            </div>
+                            <button class="upgrade-btn" id="buy-gram-ton-btn" onclick="buyGramWithTON(5, 0.05)" style="width: auto; padding: 0 15px; font-size: 0.85rem; height: 40px; align-self: center; border-color: #0088cc; color: #0088cc;">
+                                BUY 5 💎
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stars Payment Section -->
+                    <h2 class="tab-title neon-text-magenta" style="margin-top: 25px; border-top: 1px solid rgba(255, 0, 127, 0.1); padding-top: 20px; font-size: 1.2rem;">TELEGRAM STARS DEPOT</h2>
+                    <p class="tab-subtitle">Top up resources using Telegram Stars</p>
+                    <div class="upgrade-list" style="margin-top: 15px; grid-template-columns: 1fr;">
+                        <!-- Stars Option 1 -->
+                        <div class="upgrade-card neon-card-pink" style="border-color: rgba(255, 0, 127, 0.15)">
+                            <div class="upgrade-icon">🌟</div>
+                            <div class="upgrade-info" style="flex-grow: 1;">
+                                <h3 class="upgrade-name">Micro Crystal Pack</h3>
+                                <p class="upgrade-desc">Refuel your cargo with standard crystals.<br>Yield: +5,000 🔮 Crystals</p>
+                            </div>
+                            <button class="upgrade-btn" onclick="buyWithStars(50, 'crystals', 5000)" style="width: auto; padding: 0 15px; min-width: 80px;">
+                                <span class="btn-cost">50</span>
+                                <span class="btn-currency">🌟</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Stars Option 2 -->
+                        <div class="upgrade-card neon-card-pink" style="border-color: rgba(255, 0, 127, 0.25)">
+                            <div class="upgrade-icon">🌟</div>
+                            <div class="upgrade-info" style="flex-grow: 1;">
+                                <h3 class="upgrade-name">Mega Crystal Pack</h3>
+                                <p class="upgrade-desc">A major haul of energy crystals.<br>Yield: +10,000 🔮 Crystals</p>
+                            </div>
+                            <button class="upgrade-btn" onclick="buyWithStars(100, 'crystals', 10000)" style="width: auto; padding: 0 15px; min-width: 80px;">
+                                <span class="btn-cost">100</span>
+                                <span class="btn-currency">🌟</span>
+                            </button>
+                        </div>
+
+                        <!-- Stars Option 3 -->
+                        <div class="upgrade-card neon-card-magenta" style="border-color: rgba(255, 0, 127, 0.4)">
+                            <div class="upgrade-icon">🌟</div>
+                            <div class="upgrade-info" style="flex-grow: 1;">
+                                <h3 class="upgrade-name">Premium GRAM Pack</h3>
+                                <p class="upgrade-desc">Direct injection of decentralized GRAM tokens.<br>Yield: +2.50 💎 GRAM</p>
+                            </div>
+                            <button class="upgrade-btn" onclick="buyWithStars(250, 'gram', 2.5)" style="width: auto; padding: 0 15px; min-width: 80px;">
+                                <span class="btn-cost">250</span>
+                                <span class="btn-currency">🌟</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Privacy & Data Protection Section (Compliance) -->
+                    <div class="privacy-container" style="margin-top: 30px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 20px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted-color); line-height: 1.5; background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.03);">
+                        <h3 style="color: var(--text-color); margin-bottom: 8px; font-size: 0.8rem; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                            <span>🔒</span> DATA PRIVACY POLICY
+                        </h3>
+                        <p style="margin-bottom: 8px;">
+                            <strong>Data Collection:</strong> We collect basic pilot profiles (Telegram username & first name) to configure leaderboard listings, and public TON wallet addresses when connected via TON Connect.
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>Data Storage & Security:</strong> All user game data, highscores, upgrades, and wallet indicators are saved 100% locally on your device via <code>localStorage</code>. No personal data or transaction logs are collected or sent to remote databases or external servers.
+                        </p>
+                        <p>
+                            <strong>Your Rights:</strong> You have full control over your data. To permanently erase all saved pilot logs and profile metrics from this device, you can trigger the <em>Reset Save</em> action in the Developer Mock Control Panel.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HACKBOARD (LEADERBOARD) TAB -->
+            <section id="leaderboard-tab" class="tab-content">
+                <div class="menu-container">
+                    <h2 class="tab-title neon-text-blue">THE DEEP GRID</h2>
+                    <p class="tab-subtitle">Top sector runners in crystal gathering</p>
+
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>RANK</th>
+                                    <th>PILOT</th>
+                                    <th>RECORD DEPOT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-entries">
+                                <!-- Dynamic entries go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="app-navbar">
+            <button class="nav-item active" onclick="switchTab('game')">
+                <span class="nav-icon">🚀</span>
+                <span class="nav-text">FLY</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('garage')">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">GARAGE</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('balance')">
+                <span class="nav-icon">👛</span>
+                <span class="nav-text">BALANCE</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('leaderboard')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">DEEP GRID</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Haptic feedback logs overlay (mainly for visual debug on mobile if browser console isn't available) -->
+    <div id="haptic-notifier" class="haptic-notifier hidden">Haptic Vibrate</div>
+
+    <!-- Stars Invoice Payment Modal -->
+    <div id="stars-invoice-modal" class="invoice-modal hidden">
+        <div class="invoice-content">
+            <div class="invoice-header">
+                <h3>TELEGRAM INVOICE</h3>
+                <button class="close-invoice-btn" onclick="closeStarsInvoice()">✕</button>
+            </div>
+            <div class="invoice-body">
+                <div class="stars-icon-large">🌟</div>
+                <h4 id="invoice-item-name">Premium GRAM Pack</h4>
+                <p id="invoice-item-desc">Yields +2.50 GRAM tokens directly to your decentralized balance.</p>
+                <div class="invoice-price-tag">
+                    <span id="invoice-stars-amount">250</span> 🌟
+                </div>
+            </div>
+            <div class="invoice-actions">
+                <button class="pay-invoice-btn" id="pay-invoice-confirm-btn">PAY NOW</button>
+                <button class="cancel-invoice-btn" onclick="closeStarsInvoice()">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
