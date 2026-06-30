@@ -29,14 +29,14 @@
     <div class="crt-overlay"></div>
     <div class="scanlines"></div>
 
-    <!-- Floating Dev Mock Panel (For Browser Testing Only) -->
-    <div id="dev-mock-panel" class="dev-panel collapsed">
+    <!-- Secret Admin Override Panel (Hidden from average users by default) -->
+    <div id="dev-mock-panel" class="dev-panel collapsed hidden">
         <div class="dev-panel-header" onclick="toggleDevPanel()">
-            <span>⚙️ DEV MOCK CONTROL PANEL</span>
+            <span>🛠️ SECRET ADMIN CONSOLE</span>
             <span id="dev-toggle-icon">▲</span>
         </div>
         <div class="dev-panel-body">
-            <p class="dev-note">This panel simulates Telegram WebApp features in a normal browser.</p>
+            <p class="dev-note">Authorized personnel only. Overrides game parameters directly.</p>
             <div class="dev-field">
                 <label>Mock Username:</label>
                 <input type="text" id="mock-username" value="cyber_pilot_42" onchange="updateMockUser()">
@@ -54,12 +54,29 @@
                     <option value="telegram-native">Telegram Native Theme</option>
                 </select>
             </div>
-            <div class="dev-field buttons">
-                <button class="dev-btn" onclick="addMockCrystals(500)">+500 🔮</button>
-                <button class="dev-btn" onclick="addMockGram(100)">+100 💎</button>
-                <button class="dev-btn" onclick="resetMockSave()">Reset Save</button>
+            <div class="dev-field">
+                <label>Jump to Round:</label>
+                <div style="display: flex; gap: 6px; width: 60%; max-width: 200px;">
+                    <select id="admin-round-select" style="flex-grow: 1; min-width: 80px;">
+                        <option value="1">Round 1</option>
+                        <option value="5">Round 5 (Milestone)</option>
+                        <option value="10">Round 10 (Milestone)</option>
+                        <option value="20">Round 20</option>
+                        <option value="30">Round 30</option>
+                        <option value="40">Round 40</option>
+                        <option value="49">Round 49 (Pre-Victory)</option>
+                        <option value="50">Round 50 (Final Warp)</option>
+                    </select>
+                    <button class="dev-btn" onclick="adminWarpRound()" style="flex-grow: 0; padding: 4px 8px;">WARP</button>
+                </div>
             </div>
-            <div id="dev-log" class="dev-log">System initialized...</div>
+            <div class="dev-field buttons">
+                <button class="dev-btn" onclick="addMockCrystals(5000)">+5k 🔮</button>
+                <button class="dev-btn" onclick="addMockGram(50)">+50 💎</button>
+                <button class="dev-btn" onclick="maxAllUpgrades()" style="border-color: var(--neon-magenta); color: var(--neon-magenta);">Max All</button>
+                <button class="dev-btn" onclick="resetMockSave()">Wipe Save</button>
+            </div>
+            <div id="dev-log" class="dev-log">System console ready...</div>
         </div>
     </div>
 

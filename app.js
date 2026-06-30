@@ -102,6 +102,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initBackgroundStars();
     requestAnimationFrame(backgroundAnimationLoop);
 
+    // 7. Check for Admin URL override and bind Secret Taps
+    checkAdminUrlParam();
+    setupSecretAdminTaps();
+
     logDev("System ready. Pilot: " + gameState.pilot.username);
 });
 
@@ -1709,4 +1713,104 @@ function logDev(msg) {
     const logBox = document.getElementById("dev-log");
     const timestamp = new Date().toLocaleTimeString();
     logBox.innerHTML = `[${timestamp}] ${msg}<br>` + logBox.innerHTML;
+}
+
+// ==========================================
+// --- SECRET ADMIN OVERRIDE ENGINE ---
+// ==========================================
+let adminTapCount = 0;
+let adminTapTimer = null;
+
+function checkAdminUrlParam() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true' || params.get('dev') === 'true') {
+        setTimeout(() => revealAdminConsole("URL override detected"), 500);
+    }
+}
+
+function setupSecretAdminTaps() {
+    // Bind secret gesture to HUD pilot tag click
+    const pilotInfo = document.querySelector(".pilot-info");
+    if (pilotInfo) {
+        pilotInfo.style.cursor = "pointer";
+        pilotInfo.addEventListener("click", registerAdminTap);
+    }
+
+    // Also bind to start screen logo title
+    const logoText = document.querySelector("#screen-start .logo-text");
+    if (logoText) {
+        logoText.style.cursor = "pointer";
+        logoText.addEventListener("click", registerAdminTap);
+    }
+}
+
+function registerAdminTap() {
+    adminTapCount++;
+    clearTimeout(adminTapTimer);
+    
+    // 3-second timeout window to enter the code sequence
+    adminTapTimer = setTimeout(() => {
+        adminTapCount = 0;
+    }, 3000);
+
+    if (adminTapCount >= 5) {
+        revealAdminConsole("Secret tap sequence completed");
+        adminTapCount = 0;
+    }
+}
+
+function revealAdminConsole(reason) {
+    const panel = document.getElementById("dev-mock-panel");
+    if (panel) {
+        panel.classList.remove("hidden");
+        panel.classList.remove("collapsed");
+        triggerHaptic("success");
+        logDev(`[ADMIN] Override Enabled: ${reason}`);
+        
+        // Push an admin alert overlay floating text
+        pushFloatingText(canvasWidth / 2, canvasHeight / 2, "ADMIN SYSTEM ACCESS GRANTED", "#00f3ff", 120);
+    }
+}
+
+function maxAllUpgrades() {
+    triggerHaptic("success");
+    const types = ["shield", "magnet", "engine", "repair", "glitch", "overclock", "shockwave", "targeting", "nanoshield", "singularity"];
+    types.forEach(type => {
+        gameState.upgrades[type] = UPGRADE_MAX;
+    });
+    saveGameData();
+    updateHeaderUI();
+    updateGarageUI();
+    logDev("[ADMIN] All upgrades set to level 5 (MAX)!");
+}
+
+function adminWarpRound() {
+    const select = document.getElementById("admin-round-select");
+    if (!select) return;
+    
+    const targetRound = parseInt(select.value, 10);
+    if (isNaN(targetRound) || targetRound < 1 || targetRound > 50) return;
+    
+    triggerHaptic("success");
+    gameState.currentRound = targetRound;
+    gameState.speedMultiplier = 1.0 + (targetRound - 1) * 0.25;
+    
+    logDev(`[ADMIN] Warped directly to Round ${targetRound} (Speed: ${gameState.speedMultiplier.toFixed(2)}x)`);
+    
+    // Update HUD round displays
+    const hudRound = document.getElementById("hud-round-val");
+    if (hudRound) hudRound.textContent = targetRound;
+    
+    const speedEl = document.getElementById("speed-val");
+    if (speedEl) speedEl.textContent = `${gameState.speedMultiplier.toFixed(2)}x`;
+    
+    pushFloatingText(canvasWidth / 2, canvasHeight / 2, `WARPED TO ROUND ${targetRound}`, "#ff007f", 100);
+    
+    // Reset round timer to 60s
+    gameState.timeRemaining = 60;
+    const timerEl = document.getElementById("timer-val");
+    if (timerEl) timerEl.textContent = "01:00";
+    
+    updateHeaderUI();
+    updateGarageUI();
 }

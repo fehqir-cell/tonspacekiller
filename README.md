@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/29438380/README.md)
 # TON Space Killer
 
 🚀 **TON Space Killer** is a cyberpunk-themed vertical space scroller and decentralized gaming Telegram Mini App. Control your ship, collect energy crystals, navigate perilous asteroid fields, and upgrade your hardware in the Hacker Garage while managing your decentralized balances using TON Connect and Telegram Stars!
@@ -44,3 +43,35 @@ Upgrade 10 different hardware modifications:
 - **Integrations**: Telegram WebApp SDK (`telegram-web-app.js`) and TON Connect UI SDK.
 
 ---
+
+## 🚀 Local Setup & Run
+
+Since the application is built entirely on vanilla front-end tech, running it is extremely simple:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/ton-space-killer.git
+   cd ton-space-killer
+   ```
+
+2. Run a local static server to support TON Connect manifest loading:
+   - **Using Node.js**:
+     ```bash
+     npx serve .
+     ```
+   - **Using Python**:
+     ```bash
+     python -m http.server 8000
+     ```
+
+3. Open `http://localhost:5000` (or `http://localhost:8000` for python) in your browser.
+
+---
+
+## 🤖 Deploying to Telegram
+1. Host your project folder on a static hosting service with HTTPS (e.g. GitHub Pages, Vercel, Netlify).
+2. Go to **@BotFather** on Telegram.
+3. Use the `/newbot` command to create a new bot.
+4. Set up a Mini App using the `/newapp` command and select your bot.
+5. Provide the URL of your hosted website when prompted.
+6. Open your bot inside Telegram to start playing **TON Space Killer**!
