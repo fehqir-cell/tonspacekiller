@@ -396,10 +396,18 @@ function updateGarageUI() {
 }
 
 function getUpgradeTONCost(type) {
-    const currentLvl = gameState.upgrades[type];
-    if (currentLvl >= UPGRADE_MAX) return -1;
-    const costs = [0.01, 0.02, 0.04, 0.08, 0.16];
-    return costs[currentLvl];
+    const baseCost = getUpgradeCost(type);
+    if (baseCost === -1) return -1;
+    
+    const isPremium = ["nanoshield", "singularity"].includes(type);
+    
+    if (isPremium) {
+        // Premium (GRAM): 1 GRAM = 0.1 TON
+        return parseFloat((baseCost * 0.1).toFixed(3));
+    } else {
+        // Regular (Crystals): 100 crystals = 0.01 TON
+        return parseFloat((baseCost * 0.0001).toFixed(4));
+    }
 }
 
 function buyUpgrade(type) {
@@ -444,7 +452,7 @@ async function buyUpgradeWithTON(type) {
             validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds
             messages: [
                 {
-                    address: "EQB2y8G2gVlVp_lHk_U3p4r0O_h6J9p_h6J9p_h6J9p_h4zO", // Merchant burn/system address
+                    address: "UQCKWWJEzLY4JSULMtL8r8H4O4dkx9OXNd8wxEcu6lP81E4I", // Corporate wallet address
                     amount: nanotons
                 }
             ]
@@ -483,7 +491,7 @@ async function buyGramWithTON(amount, tonAmount) {
             validUntil: Math.floor(Date.now() / 1000) + 60,
             messages: [
                 {
-                    address: "EQB2y8G2gVlVp_lHk_U3p4r0O_h6J9p_h6J9p_h6J9p_h4zO",
+                    address: "UQCKWWJEzLY4JSULMtL8r8H4O4dkx9OXNd8wxEcu6lP81E4I",
                     amount: nanotons
                 }
             ]
