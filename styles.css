@@ -452,10 +452,11 @@ body {
     z-index: 6;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    padding: 30px;
+    padding: 40px 20px 80px 20px;
     text-align: center;
+    overflow-y: auto;
 }
 
 .logo-text {
